@@ -1,6 +1,12 @@
 import cv2
 import mediapipe as mp
 import time
+import RPi.GPIO as GPIO   
+
+GPIO.setwarnings(False)    
+GPIO.setmode(GPIO.BOARD)   
+GPIO.setup(23, GPIO.OUT, initial=GPIO.LOW)   # Set pin 23 to be an output pin and set initial value to low (off)
+GPIO.setup(24, GPIO.OUT, initial=GPIO.HIGH)   # Set pin 24 to be an output pin and set initial value to HIGH (on)
 
 cap = cv2.VideoCapture(0)
 
@@ -18,6 +24,8 @@ while True:
     # print(results.multi_hand_landmarks)
 
     if results.multi_hand_landmarks:
+        GPIO.output(24, GPIO.LOW) 
+        GPIO.output(23, GPIO.HIGH)
         for handLms in results.multi_hand_landmarks:
             for id, lm in enumerate(handLms.landmark):
                 # print(id, lm)
