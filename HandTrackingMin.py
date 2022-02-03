@@ -3,6 +3,7 @@ import mediapipe as mp
 import time
 import RPi.GPIO as GPIO
 import mysql.connector
+import threading
 
 db = mysql.connector.connect(
     host="localhost",
@@ -31,6 +32,13 @@ cTime = 0
 localTime = time.ctime(time.time())
 detection = False
 
+def flash():
+    GPIO.output(LED_GREEN, GPIO.HIGH)
+    time.sleep(.5)
+    GPIO.output(LED_GREEN, GPIO.LOW)
+    time.sleep(.5)
+    
+
 try:
     while True:
         success, img = cap.read()
@@ -40,8 +48,11 @@ try:
 
         if results.multi_hand_landmarks:
             detection = True
+            startTime = time.time()
             GPIO.output(LED_RED, GPIO.LOW)
-            GPIO.output(LED_GREEN, GPIO.HIGH)
+            t = threading.Timer(0, flash)
+            t.start()
+            
             for handLms in results.multi_hand_landmarks:
                 # for id, lm in enumerate(handLms.landmark):
                     # print(id, lm)
@@ -53,11 +64,16 @@ try:
 
                 mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
         else:
+            t.cancel()
             GPIO.output(LED_RED, GPIO.HIGH)
             GPIO.output(LED_GREEN, GPIO.LOW)
+            endTime = time.time()
             if (detection):
                 detection = False
-                mycursor.execute("INSERT INTO handLog2 (time, seconds) VALUES (%s,%s)", (localTime, 9))
+                duration = (int) endTime - startTime
+                endTime = 0
+                startTime = 0
+                mycursor.execute("INSERT INTO handLog2 (time, seconds) VALUES (%s,%s)", (localTime, duration))
                 db.commit()
                 
         cTime = time.time()
