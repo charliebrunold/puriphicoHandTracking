@@ -2,6 +2,15 @@ import cv2
 import mediapipe as mp
 import time
 import RPi.GPIO as GPIO
+import mysql.connector
+
+db = mysql.connector.connect(
+    host="localhost",
+    user="pi",
+    passwd="puriphicotest",
+    database=("puriphicoTest")
+)
+mycursor = db.cursor()
 
 LED_GREEN = 18
 LED_RED = 16
@@ -19,6 +28,9 @@ mpDraw = mp.solutions.drawing_utils
 pTime = 0
 cTime = 0
 
+localTime = time.ctime(time.time())
+detection = False
+
 try:
     while True:
         success, img = cap.read()
@@ -27,6 +39,7 @@ try:
         # print(results.multi_hand_landmarks)
 
         if results.multi_hand_landmarks:
+            detection = True
             GPIO.output(LED_RED, GPIO.LOW)
             GPIO.output(LED_GREEN, GPIO.HIGH)
             for handLms in results.multi_hand_landmarks:
@@ -42,7 +55,11 @@ try:
         else:
             GPIO.output(LED_RED, GPIO.HIGH)
             GPIO.output(LED_GREEN, GPIO.LOW)
-
+            if (detection):
+                detection = False
+                mycursor.execute("INSERT INTO handLog2 (time, seconds) VALUES (%s,%s)", (localTime, 9))
+                db.commit()
+                
         cTime = time.time()
         fps = 1/(cTime - pTime)
         pTime = cTime
@@ -53,3 +70,4 @@ try:
         cv2.waitKey(1)
 except KeyboardInterrupt: 
     GPIO.cleanup()
+
